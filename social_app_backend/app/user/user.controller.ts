@@ -23,7 +23,13 @@ export const getUserById = asyncHandler(
 					comments: true,
 
 					friends: true,
-					posts: true
+					posts: {
+						include: {
+							createdBy: true,
+							comments: true,
+							postLikes: true
+						}
+					}
 				}
 			})
 			if (!foundUser) {
@@ -31,8 +37,35 @@ export const getUserById = asyncHandler(
 				return
 			}
 			res.status(StatusCodes.OK).json(foundUser)
+			return
 		} catch (e: any) {
 			res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(e)
+		}
+	}
+)
+export const getUserSelfProfile = asyncHandler(
+	async (req: IRequest, res: Response) => {
+		try {
+			const userId = req.user
+			if (!userId) {
+				res
+					.status(StatusCodes.BAD_REQUEST)
+					.json({ message: 'User is not specified' })
+				return
+			}
+			const user = await prisma.user.findUnique({
+				where: {
+					id: userId
+				},
+				include: {
+					comments: true,
+					friends: true,
+					posts: true
+				}
+			})
+			res.status(StatusCodes.OK).json(user)
+		} catch (e: any) {
+			res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: e })
 		}
 	}
 )
@@ -73,7 +106,7 @@ export const updateUserProfile = asyncHandler(
 				phoneNumber,
 				email
 			} = req.body
-			const image = req.file?.path
+			const image = req.file?.path.substring(8)
 			const data = {
 				firstName,
 				lastName,
@@ -230,5 +263,28 @@ export const handleFriendAction = asyncHandler(
 			const updated = await addFriend(+userId, friendId)
 			res.status(StatusCodes.OK).json(updated)
 		}
+	}
+)
+
+export const getUsersByName = asyncHandler(
+	async (req: IRequest, res: Response) => {
+		const { name, lastName } = req.query
+
+		const usersThatMatchQuery = await prisma.user.findMany({
+			where: {
+				firstName: {
+					mode: 'insensitive',
+					contains: name ? String(name) : undefined
+				},
+				lastName: {
+					mode: 'insensitive',
+					contains: lastName ? String(lastName) : undefined
+				}
+			},
+			include: {
+				friends: true
+			}
+		})
+		res.status(StatusCodes.OK).json(usersThatMatchQuery)
 	}
 )

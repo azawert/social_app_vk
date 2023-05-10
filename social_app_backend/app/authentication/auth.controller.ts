@@ -39,6 +39,11 @@ export const registration = asyncHandler(
 					middleName,
 					status,
 					university
+				},
+				include: {
+					comments: true,
+					friends: true,
+					posts: true
 				}
 			})
 			const token = jwt.sign(String(createdUser.id), process.env.ACCESS_TOKEN!)
@@ -63,8 +68,7 @@ export const authenticate = asyncHandler(
 				}
 			})
 			if (!user) {
-				res.status(StatusCodes.NOT_FOUND).json({ message: 'Not found' })
-				return
+				throw new Error('Not found')
 			}
 			const isPasswordCorrect = await bcrypt.compare(password, user.password)
 			if (!isPasswordCorrect) {

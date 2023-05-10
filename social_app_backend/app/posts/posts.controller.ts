@@ -54,9 +54,16 @@ export const getAllFriendsPost = asyncHandler(
 			})
 			const posts = await prisma.post.findMany({
 				where: {
-					userId: {
-						in: user?.friends.map(friend => friend.id)
-					}
+					OR: [
+						{
+							userId: {
+								in: user?.friends.map(friend => friend.id)
+							}
+						},
+						{
+							userId: user?.id
+						}
+					]
 				},
 				include: {
 					comments: {
@@ -65,7 +72,9 @@ export const getAllFriendsPost = asyncHandler(
 							id: true,
 							createdBy: true
 						}
-					}
+					},
+					createdBy: true,
+					postLikes: true
 				},
 				orderBy: {
 					createdAt: 'desc'
@@ -81,6 +90,11 @@ export const getAllFriendsPost = asyncHandler(
 export const deletePost = asyncHandler(async (req: IRequest, res: Response) => {
 	try {
 		const { postId } = req.params
+		await prisma.comment.deleteMany({
+			where: {
+				postId: +postId
+			}
+		})
 		await prisma.post.delete({
 			where: {
 				id: +postId
@@ -96,7 +110,7 @@ export const createPost = asyncHandler(async (req: IRequest, res: Response) => {
 	try {
 		const { description } = req.body
 		const userId = req.user
-		const image = req.file?.path
+		const image = req.file?.path.substring(8)
 		if (!userId) {
 			res.status(StatusCodes.BAD_REQUEST).json({ message: 'No user specified' })
 			return
@@ -122,7 +136,7 @@ export const updatePost = asyncHandler(async (req: IRequest, res: Response) => {
 	try {
 		const { postId } = req.params
 		const { description } = req.body
-		const image = req.file?.path
+		const image = req.file?.path.substring(8)
 		const postToUpdate = await prisma.post.update({
 			where: {
 				id: +postId
@@ -187,5 +201,25 @@ export const handleLikePost = asyncHandler(
 		}
 		isPostAlreadyLiked ? await dislikePost() : await likePost()
 		res.status(204).json({})
+	}
+)
+
+export const getUserPostsByUserId = asyncHandler(
+	async (req: IRequest, res: Response) => {
+		const { userId } = req.params
+		const posts = await prisma.post.findMany({
+			where: {
+				userId: +userId
+			},
+			include: {
+				createdBy: true,
+				postLikes: true,
+				comments: true
+			},
+			orderBy: {
+				createdAt: 'desc'
+			}
+		})
+		res.status(StatusCodes.OK).json(posts)
 	}
 )

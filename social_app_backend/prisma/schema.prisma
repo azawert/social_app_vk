@@ -18,7 +18,7 @@ model User {
   password String
   image String?
   phoneNumber String? @map("phone_number")
-  dateOfBirth DateTime? @map("date_of_birth")
+  dateOfBirth String? @map("date_of_birth")
   hometown String? 
   university String?
   status String?

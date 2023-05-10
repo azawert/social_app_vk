@@ -8,6 +8,7 @@ import {
 	deletePost,
 	getAllFriendsPost,
 	getPostById,
+	getUserPostsByUserId,
 	handleLikePost,
 	updatePost
 } from './posts.controller'
@@ -16,6 +17,7 @@ const router = express.Router()
 
 router.get('/friends-posts', checkAuth, getAllFriendsPost)
 router.get('/:postId', checkAuth, getPostById)
+router.get('/posts/:userId', checkAuth, getUserPostsByUserId)
 router.post('/create-post', checkAuth, upload.single('image'), createPost)
 router.post('/like/:postId', checkAuth, handleLikePost)
 router.put('/:postId', checkAuth, upload.single('image'), updatePost)
